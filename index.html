@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capacidade de Atendimento dos Corpos de Bombeiros no Brasil</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #FAFAFA;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    .header {
+      text-align: center;
+      padding: 48px 24px 16px;
+      background: linear-gradient(135deg, #0072B2 0%, #009E73 100%);
+      color: white;
+    }
+    .header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    .header p { font-size: 1.1rem; opacity: 0.9; font-style: italic; max-width: 700px; margin: 0 auto; }
+    .kpi-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .kpi-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 28px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      min-width: 180px;
+      flex: 1;
+      border-top: 4px solid #0072B2;
+    }
+    .kpi-card.danger { border-top-color: #D55E00; }
+    .kpi-card.warning { border-top-color: #E69F00; }
+    .kpi-card.success { border-top-color: #009E73; }
+    .kpi-card .value { font-size: 2rem; font-weight: 700; color: #0072B2; }
+    .kpi-card.danger .value { color: #D55E00; }
+    .kpi-card.warning .value { color: #E69F00; }
+    .kpi-card.success .value { color: #009E73; }
+    .kpi-card .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .section {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin: 24px 0;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 20px 24px 0;
+    }
+    .section-header h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .section-header .insight {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 8px 16px;
+      background: #F0E442;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .chart-container { padding: 8px 16px 16px; }
+    .chart-container .js-plotly-plot { width: 100% !important; }
+    .source {
+      text-align: center;
+      padding: 12px;
+      font-size: 0.78rem;
+      color: #999;
+      font-style: italic;
+    }
+    .footer {
+      text-align: center;
+      padding: 32px 24px;
+      color: #999;
+      font-size: 0.85rem;
+    }
+    .footer a { color: #0072B2; text-decoration: none; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.4rem; }
+      .kpi-row { gap: 12px; }
+      .kpi-card { min-width: 140px; padding: 14px 16px; }
+      .kpi-card .value { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const DATA = {
+      "populacao": 202083020,
+      "efetivo_total": 68878,
+      "meta_nacional": 311208,
+      "deficit": 242330,
+      "prop_nacional": 0.34,
+      "ufs": [
+        {"uf":"DF","regiao":"Centro-Oeste","populacao":2792811,"efetivo_ativa":5825,"efetivo_operacional":3425,"prop_ativa":2.09},
+        {"uf":"AP","regiao":"Norte","populacao":729353,"efetivo_ativa":1243,"efetivo_operacional":0,"prop_ativa":1.7},
+        {"uf":"RR","regiao":"Norte","populacao":622859,"efetivo_ativa":507,"efetivo_operacional":344,"prop_ativa":0.81},
+        {"uf":"AC","regiao":"Norte","populacao":824448,"efetivo_ativa":633,"efetivo_operacional":584,"prop_ativa":0.77},
+        {"uf":"RJ","regiao":"Sudeste","populacao":15991284,"efetivo_ativa":11668,"efetivo_operacional":8538,"prop_ativa":0.73},
+        {"uf":"MS","regiao":"Centro-Oeste","populacao":2737054,"efetivo_ativa":1681,"efetivo_operacional":1681,"prop_ativa":0.61},
+        {"uf":"RO","regiao":"Norte","populacao":1572676,"efetivo_ativa":827,"efetivo_operacional":684,"prop_ativa":0.53},
+        {"uf":"TO","regiao":"Norte","populacao":1506137,"efetivo_ativa":671,"efetivo_operacional":391,"prop_ativa":0.45},
+        {"uf":"GO","regiao":"Centro-Oeste","populacao":7022513,"efetivo_ativa":3082,"efetivo_operacional":1659,"prop_ativa":0.44},
+        {"uf":"SE","regiao":"Nordeste","populacao":2201997,"efetivo_ativa":901,"efetivo_operacional":825,"prop_ativa":0.41},
+        {"uf":"AL","regiao":"Nordeste","populacao":3117345,"efetivo_ativa":1201,"efetivo_operacional":1180,"prop_ativa":0.39},
+        {"uf":"MT","regiao":"Centro-Oeste","populacao":3635989,"efetivo_ativa":1346,"efetivo_operacional":901,"prop_ativa":0.37},
+        {"uf":"PB","regiao":"Nordeste","populacao":3959587,"efetivo_ativa":1447,"efetivo_operacional":1447,"prop_ativa":0.37},
+        {"uf":"SC","regiao":"Sul","populacao":7573632,"efetivo_ativa":2612,"efetivo_operacional":1582,"prop_ativa":0.34},
+        {"uf":"AM","regiao":"Norte","populacao":3929369,"efetivo_ativa":1346,"efetivo_operacional":1222,"prop_ativa":0.34},
+        {"uf":"ES","regiao":"Sudeste","populacao":3808060,"efetivo_ativa":1265,"efetivo_operacional":725,"prop_ativa":0.33},
+        {"uf":"PR","regiao":"Sul","populacao":11390719,"efetivo_ativa":3221,"efetivo_operacional":2520,"prop_ativa":0.28},
+        {"uf":"RN","regiao":"Nordeste","populacao":3291201,"efetivo_ativa":919,"efetivo_operacional":541,"prop_ativa":0.28},
+        {"uf":"RS","regiao":"Sul","populacao":10816723,"efetivo_ativa":3002,"efetivo_operacional":3002,"prop_ativa":0.28},
+        {"uf":"PA","regiao":"Norte","populacao":8088984,"efetivo_ativa":2211,"efetivo_operacional":2157,"prop_ativa":0.27},
+        {"uf":"MG","regiao":"Sudeste","populacao":20436535,"efetivo_ativa":5574,"efetivo_operacional":4363,"prop_ativa":0.27},
+        {"uf":"BA","regiao":"Nordeste","populacao":14103181,"efetivo_ativa":3506,"efetivo_operacional":2324,"prop_ativa":0.25},
+        {"uf":"PE","regiao":"Nordeste","populacao":9018330,"efetivo_ativa":2220,"efetivo_operacional":1142,"prop_ativa":0.25},
+        {"uf":"MA","regiao":"Nordeste","populacao":6759838,"efetivo_ativa":1534,"efetivo_operacional":1290,"prop_ativa":0.23},
+        {"uf":"SP","regiao":"Sudeste","populacao":44117616,"efetivo_ativa":8274,"efetivo_operacional":5804,"prop_ativa":0.19},
+        {"uf":"CE","regiao":"Nordeste","populacao":8771496,"efetivo_ativa":1636,"efetivo_operacional":1469,"prop_ativa":0.19},
+        {"uf":"PI","regiao":"Nordeste","populacao":3263283,"efetivo_ativa":526,"efetivo_operacional":526,"prop_ativa":0.16}
+      ],
+      "evolucao": [
+        {"ano":2020,"efetivo_ativa":66117,"efetivo_operacional":47293,"prop_ativa":0.33,"prop_operacional":0.23},
+        {"ano":2021,"efetivo_ativa":66944,"efetivo_operacional":51088,"prop_ativa":0.33,"prop_operacional":0.25},
+        {"ano":2022,"efetivo_ativa":67566,"efetivo_operacional":51443,"prop_ativa":0.33,"prop_operacional":0.25},
+        {"ano":2023,"efetivo_ativa":67226,"efetivo_operacional":48669,"prop_ativa":0.33,"prop_operacional":0.24},
+        {"ano":2024,"efetivo_ativa":68878,"efetivo_operacional":50326,"prop_ativa":0.34,"prop_operacional":0.25}
+      ]
+    };
+
+    const META = 1.54;
+    const COLORS = {
+      azul: '#0072B2', vermelho: '#D55E00', verde: '#009E73',
+      laranja: '#E69F00', amarelo: '#F0E442', rosa: '#CC79A7',
+      azul_cl: '#56B4E9', preto: '#000000', cinza: '#999999'
+    };
+    const fmt = (n) => n.toLocaleString('pt-BR');
+
+    function Chart({ id, children }) {
+      const ref = React.useRef(null);
+      React.useEffect(() => { if (ref.current) Plotly.newPlot(ref.current, ...children); }, []);
+      return <div ref={ref} id={id} style={{width:'100%'}} />;
+    }
+
+    /* ── V1: Déficit ── */
+    function V1Deficit() {
+      const trace1 = {
+        x: ['Efetivo Atual\n(2024)', 'Meta NFPA\n(necessário)'],
+        y: [DATA.efetivo_total, DATA.meta_nacional],
+        type: 'bar',
+        marker: { color: [COLORS.vermelho, COLORS.azul], line: { color: 'white', width: 2 } },
+        text: [fmt(DATA.efetivo_total), fmt(DATA.meta_nacional)],
+        textposition: 'outside',
+        textfont: { size: 16, family: 'Segoe UI', color: COLORS.preto },
+        hovertemplate: '%{x}: %{y:,.0f}<extra></extra>',
+      };
+      const layout = {
+        height: 400,
+        margin: { t: 20, b: 60, l: 70, r: 20 },
+        yaxis: { title: 'Bombeiros Militares', gridcolor: '#eee', tickformat: ',' },
+        xaxis: { tickfont: { size: 12 } },
+        annotations: [{
+          x: 0.5, y: 0.55, xref: 'paper', yref: 'paper',
+          text: `<b>Só temos ${fmt(DATA.efetivo_total)} Bombeiros.</b><br>Faltam ${fmt(DATA.deficit)} para proteger a população.`,
+          showarrow: false,
+          font: { size: 14, color: COLORS.vermelho },
+          bgcolor: COLORS.amarelo, opacity: 0.85,
+          borderpad: 8, bordercolor: 'none',
+        }],
+        plot_bgcolor: 'white', paper_bgcolor: 'white',
+      };
+      return (
+        <div className="section">
+          <div className="section-header">
+            <h2>O Brasil tem déficit de 242 mil Bombeiros em relação ao padrão internacional</h2>
+            <span className="insight">Isso equivale a apenas 0,34 Bombeiros para cada 1.000 habitantes — a meta é 1,54.</span>
+          </div>
+          <div className="chart-container">
+            <Chart id="v1">{[[trace1], layout, {responsive:true}]}</Chart>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── V2: Lollipop por UF ── */
+    function V2Lollipop() {
+      const sorted = [...DATA.ufs].sort((a,b) => a.prop_ativa - b.prop_ativa);
+      const colors = sorted.map(u => u.prop_ativa >= META ? COLORS.verde : COLORS.vermelho);
+      const traceLine = {
+        x: sorted.map(u => u.prop_ativa),
+        y: sorted.map(u => u.uf),
+        type: 'scatter', mode: 'lines',
+        line: { color: 'rgba(0,0,0,0)', width: 0 },
+        showlegend: false, hoverinfo: 'skip',
+      };
+      const traceMarker = {
+        x: sorted.map(u => u.prop_ativa),
+        y: sorted.map(u => u.uf),
+        type: 'scatter', mode: 'markers+text',
+        marker: { color: colors, size: 10, line: { color: 'white', width: 1 } },
+        text: sorted.map(u => u.prop_ativa.toFixed(2)),
+        textposition: 'middle right',
+        textfont: { size: 9, family: 'Segoe UI' },
+        hovertemplate: '<b>%{y}</b><br>%{x:.2f} bombeiros /1.000 hab.<extra></extra>',
+        showlegend: false,
+      };
+      const traceMeta = {
+        x: [META, META], y: [sorted[0].uf, sorted[sorted.length-1].uf],
+        type: 'scatter', mode: 'lines',
+        line: { color: COLORS.azul, dash: 'dash', width: 2 },
+        name: 'Referência NFPA (1,54)',
+        hoverinfo: 'skip',
+      };
+      const layout = {
+        height: 650, margin: { t: 10, b: 40, l: 40, r: 60 },
+        xaxis: { title: 'Bombeiros por 1.000 Habitantes', gridcolor: '#eee', range: [0, 2.5] },
+        yaxis: { automargin: true, tickfont: { size: 10, family: 'Segoe UI' } },
+        legend: { x: 0.75, y: 0.98, bgcolor: 'rgba(255,255,255,0.9)', bordercolor: '#ddd', borderwidth: 1 },
+        shapes: [{
+          type: 'rect', x0: 0, x1: META, y0: -0.5, y1: sorted.length - 0.5,
+          fillcolor: 'rgba(213,94,0,0.04)', line: { width: 0 }, layer: 'below',
+        }],
+        plot_bgcolor: 'white', paper_bgcolor: 'white',
+      };
+      return (
+        <div className="section">
+          <div className="section-header">
+            <h2>Quase nenhum estado atende à referência internacional de Bombeiros</h2>
+            <span className="insight">25 dos 27 estados estão abaixo da meta. Apenas DF e AP ★ ultrapassam.</span>
+          </div>
+          <div className="chart-container">
+            <Chart id="v2">{[[traceLine, traceMarker, traceMeta], layout, {responsive:true}]}</Chart>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── V3: Evolução temporal ── */
+    function V3Evolucao() {
+      const anos = DATA.evolucao.map(e => e.ano);
+      const t1 = {
+        x: anos, y: DATA.evolucao.map(e => e.efetivo_ativa),
+        type: 'scatter', mode: 'lines+markers',
+        name: 'Efetivo Ativa (total)',
+        line: { color: COLORS.azul, width: 3 },
+        marker: { size: 10 },
+        fill: 'tozeroy', fillcolor: 'rgba(0,114,178,0.1)',
+        hovertemplate: '%{x}: %{y:,.0f}<extra>Ativa</extra>',
+      };
+      const t2 = {
+        x: anos, y: DATA.evolucao.map(e => e.efetivo_operacional),
+        type: 'scatter', mode: 'lines+markers',
+        name: 'Efetivo Operacional',
+        line: { color: COLORS.laranja, width: 3 },
+        marker: { size: 10, symbol: 'square' },
+        fill: 'tozeroy', fillcolor: 'rgba(230,159,0,0.1)',
+        hovertemplate: '%{x}: %{y:,.0f}<extra>Operacional</extra>',
+      };
+      const layout = {
+        height: 400, margin: { t: 20, b: 40, l: 70, r: 20 },
+        yaxis: { title: 'Quantidade de Bombeiros', gridcolor: '#eee', tickformat: ',' },
+        xaxis: { dtick: 1 },
+        legend: { x: 0.02, y: 0.98, bgcolor: 'rgba(255,255,255,0.9)' },
+        shapes: [{
+          type: 'line', x0: 2020, x1: 2024, y0: DATA.meta_nacional, y1: DATA.meta_nacional,
+          line: { color: COLORS.vermelho, dash: 'dash', width: 2 },
+        }],
+        annotations: [{
+          x: 2024, y: DATA.meta_nacional, xanchor: 'left', yanchor: 'bottom',
+          text: `Meta NFPA: ${fmt(DATA.meta_nacional)}`,
+          showarrow: false, font: { size: 11, color: COLORS.vermelho, weight: 'bold' },
+        }],
+        plot_bgcolor: 'white', paper_bgcolor: 'white',
+      };
+      return (
+        <div className="section">
+          <div className="section-header">
+            <h2>Efetivo total cresceu apenas 4% em 5 anos — defasagem persiste</h2>
+            <span className="insight">Em 5 anos, o efetivo cresceu apenas 4% — a defasagem com a meta internacional continua enorme. A proporção de Bombeiros por 1.000 habitantes permanece praticamente estável.</span>
+          </div>
+          <div className="chart-container">
+            <Chart id="v3">{[[t1, t2], layout, {responsive:true}]}</Chart>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── V4: Box plot por região ── */
+    function V4Boxplot() {
+      const ordem = ['Norte','Nordeste','Centro-Oeste','Sudeste','Sul'];
+      const boxColors = [COLORS.verde, COLORS.laranja, COLORS.azul, COLORS.rosa, COLORS.azul_cl];
+      const traces = ordem.map((reg, i) => {
+        const vals = DATA.ufs.filter(u => u.regiao === reg).map(u => u.prop_ativa);
+        return {
+          y: vals, type: 'box', name: reg,
+          marker: { color: boxColors[i], outliercolor: COLORS.vermelho },
+          line: { color: COLORS.preto },
+          boxpoints: 'all', jitter: 0.3, pointpos: -1.5,
+          fillcolor: boxColors[i] + '40',
+        };
+      });
+      const layout = {
+        height: 420, margin: { t: 20, b: 40, l: 50, r: 20 },
+        yaxis: { title: 'Bombeiros / 1.000 hab.', gridcolor: '#eee' },
+        shapes: [{
+          type: 'line', x0: -0.5, x1: 4.5, y0: META, y1: META,
+          line: { color: COLORS.vermelho, dash: 'dash', width: 2 },
+        }],
+        annotations: [{
+          x: 4.3, y: META + 0.05, text: 'NFPA (1,54)',
+          showarrow: false, font: { size: 10, color: COLORS.vermelho },
+        }],
+        plot_bgcolor: 'white', paper_bgcolor: 'white',
+        showlegend: false,
+      };
+      return (
+        <div className="section">
+          <div className="section-header">
+            <h2>Nenhuma região brasileira atinge a referência internacional em média</h2>
+            <span className="insight">Nenhuma região atinge a referência sequer em sua melhor UF (em média). A desigualdade regional persiste.</span>
+          </div>
+          <div className="chart-container">
+            <Chart id="v4">{[traces, layout, {responsive:true}]}</Chart>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── V5: Antes vs Depois (Top 10) ── */
+    function V5Comparativo() {
+      const top10 = DATA.ufs.slice(0, 10).sort((a,b) => a.efetivo_ativa - b.efetivo_ativa);
+      const necessario = top10.map(u => Math.round((META/1000) * u.populacao));
+      const deficit = top10.map((u, i) => necessario[i] - u.efetivo_ativa);
+      const t1 = {
+        y: top10.map(u => u.uf), x: top10.map(u => u.efetivo_ativa),
+        type: 'bar', orientation: 'h', name: 'Efetivo Atual (2024)',
+        marker: { color: COLORS.vermelho, opacity: 0.85 },
+        text: top10.map(u => fmt(u.efetivo_ativa)),
+        textposition: 'outside', textfont: { size: 9, color: COLORS.vermelho },
+        hovertemplate: '<b>%{y}</b><br>Atual: %{x:,.0f}<extra></extra>',
+      };
+      const t2 = {
+        y: top10.map(u => u.uf), x: necessario,
+        type: 'bar', orientation: 'h', name: 'Necessário (meta NFPA)',
+        marker: { color: COLORS.azul, opacity: 0.6 },
+        text: top10.map((u, i) => `${fmt(necessario[i])}  (faltam ${fmt(deficit[i])})`),
+        textposition: 'outside', textfont: { size: 9, color: COLORS.azul },
+        hovertemplate: '<b>%{y}</b><br>Necessário: %{x:,.0f}<extra></extra>',
+      };
+      const layout = {
+        height: 480, margin: { t: 10, b: 40, l: 40, r: 180 },
+        barmode: 'overlay',
+        xaxis: { title: 'Quantidade de Bombeiros', gridcolor: '#eee', tickformat: ',' },
+        yaxis: { automargin: true, tickfont: { size: 11, family: 'Segoe UI', weight: 'bold' } },
+        legend: { x: 0.65, y: 0.1, bgcolor: 'rgba(255,255,255,0.9)' },
+        plot_bgcolor: 'white', paper_bgcolor: 'white',
+      };
+      return (
+        <div className="section">
+          <div className="section-header">
+            <h2>Mesmo os maiores Corpos de Bombeiros do país ficam aquém da meta</h2>
+            <span className="insight">O Rio de Janeiro, com o maior efetivo (11.668), precisaria de 25.983 — faltam 14.315 só no RJ.</span>
+          </div>
+          <div className="chart-container">
+            <Chart id="v5">{[[t1, t2], layout, {responsive:true}]}</Chart>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── App ── */
+    function App() {
+      return (
+        <div>
+          <div className="header">
+            <h1>Capacidade de Atendimento dos Corpos de Bombeiros no Brasil</h1>
+            <p>O país possui recursos humanos nos Corpos de Bombeiros suficientes para atender à sua população?</p>
+          </div>
+
+          <div className="kpi-row">
+            <div className="kpi-card danger">
+              <div className="value">{fmt(DATA.deficit)}</div>
+              <div className="label">Bombeiros faltando</div>
+            </div>
+            <div className="kpi-card warning">
+              <div className="value">{DATA.prop_nacional}</div>
+              <div className="label">/1.000 hab. (atual)</div>
+            </div>
+            <div className="kpi-card">
+              <div className="value">{META}</div>
+              <div className="label">/1.000 hab. (meta NFPA)</div>
+            </div>
+            <div className="kpi-card success">
+              <div className="value">2</div>
+              <div className="label">estados acima da meta</div>
+            </div>
+          </div>
+
+          <div className="container">
+            <V1Deficit />
+            <V2Lollipop />
+            <V3Evolucao />
+            <div className="grid-2">
+              <V4Boxplot />
+              <V5Comparativo />
+            </div>
+          </div>
+
+          <div className="source">
+            Fontes: SENASP/MJSP (ano base 2024) · IBGE Censo 2022 · NFPA Fire Department Profile 2020 (1,54/1.000 hab.)
+          </div>
+
+          <div className="footer">
+            Dashboard desenvolvido para a disciplina de Storytelling — Mestrado IDP, 2026<br/>
+            <a href="https://github.com/timczbsb/bombeiros_nacional" target="_blank">github.com/timczbsb/bombeiros_nacional</a>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
