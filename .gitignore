@@ -1,0 +1,17 @@
+# Ambiente Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Dados de saída (gerados pelo script)
+*.png
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
