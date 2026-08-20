@@ -187,7 +187,8 @@
         yaxis: { title: 'Bombeiros Militares', gridcolor: '#eee', tickformat: ',' },
         xaxis: { tickfont: { size: 12 } },
         annotations: [{
-          x: 0.5, y: 0.55, xref: 'paper', yref: 'paper',
+          x: 0.98, y: 0.95, xref: 'paper', yref: 'paper',
+          xanchor: 'right', yanchor: 'top', align: 'right',
           text: `<b>Só temos ${fmt(DATA.efetivo_total)} Bombeiros.</b><br>Faltam ${fmt(DATA.deficit)} para proteger a população.`,
           showarrow: false,
           font: { size: 14, color: COLORS.vermelho },
