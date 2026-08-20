@@ -186,22 +186,18 @@
         margin: { t: 20, b: 60, l: 70, r: 20 },
         yaxis: { title: 'Bombeiros Militares', gridcolor: '#eee', tickformat: ',' },
         xaxis: { tickfont: { size: 12 } },
-        annotations: [{
-          x: 0.98, y: 0.95, xref: 'paper', yref: 'paper',
-          xanchor: 'right', yanchor: 'top', align: 'right',
-          text: `<b>Só temos ${fmt(DATA.efetivo_total)} Bombeiros.</b><br>Faltam ${fmt(DATA.deficit)} para proteger a população.`,
-          showarrow: false,
-          font: { size: 14, color: COLORS.vermelho },
-          bgcolor: COLORS.amarelo, opacity: 0.85,
-          borderpad: 8, bordercolor: 'none',
-        }],
         plot_bgcolor: 'white', paper_bgcolor: 'white',
       };
       return (
         <div className="section">
-          <div className="section-header">
-            <h2>O Brasil tem déficit de 242 mil Bombeiros em relação ao padrão internacional</h2>
-            <span className="insight">Isso equivale a apenas 0,34 Bombeiros para cada 1.000 habitantes — a meta é 1,54.</span>
+          <div className="section-header" style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'12px'}}>
+            <div>
+              <h2>O Brasil tem déficit de 242 mil Bombeiros em relação ao padrão internacional</h2>
+              <span className="insight">Isso equivale a apenas 0,34 Bombeiros para cada 1.000 habitantes — a meta é 1,54.</span>
+            </div>
+            <div className="insight" style={{color: COLORS.vermelho, marginTop: 0, whiteSpace:'nowrap'}}>
+              <b>Só temos {fmt(DATA.efetivo_total)} Bombeiros.</b><br/>Faltam {fmt(DATA.deficit)} para proteger a população.
+            </div>
           </div>
           <div className="chart-container">
             <Chart id="v1">{[[trace1], layout, {responsive:true}]}</Chart>
